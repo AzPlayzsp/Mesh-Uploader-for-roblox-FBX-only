@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesh Uploader (FBX Only)</title>
+<style>
+:root{
+  --bg:#e9eff2;
+  --card:#ffffff;
+  --field:#f4f8fa;
+  --ink:#10222d;
+  --mute:#566a76;
+  --line:#c5d3da;
+  --accent:#0b6f7c;
+  --accent-ink:#ffffff;
+  --warn:#a6241b;
+  --ok:#17703d;
+  --note:#fff4d6;
+  --note-ink:#5a4300;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0c1820;
+    --card:#142630;
+    --field:#0e1d26;
+    --ink:#e5eef2;
+    --mute:#93a8b4;
+    --line:#2a4352;
+    --accent:#3fc4d4;
+    --accent-ink:#04222a;
+    --warn:#ff8f85;
+    --ok:#74dea0;
+    --note:#3a3014;
+    --note-ink:#f3dc9a;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Avenir Next","Segoe UI",Roboto,system-ui,sans-serif;
+  line-height:1.5;
+  padding:20px 14px 48px;
+}
+main{max-width:520px;margin:0 auto}
+h1{
+  font-size:2rem;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  margin:8px 0 4px;
+  font-weight:800;
+}
+h1 small{
+  display:block;
+  font-size:1rem;
+  font-weight:600;
+  letter-spacing:0;
+  color:var(--accent);
+  margin-top:6px;
+}
+.lead{color:var(--mute);margin:0 0 20px;font-size:.95rem}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px 16px;
+  margin-bottom:16px;
+}
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.n{
+  flex:none;
+  width:24px;height:24px;
+  border-radius:50%;
+  background:var(--accent);
+  color:var(--accent-ink);
+  font-size:.8rem;
+  display:grid;place-items:center;
+}
+input,textarea{
+  width:100%;
+  font:inherit;
+  color:var(--ink);
+  background:var(--field);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:12px;
+  outline:none;
+}
+textarea{min-height:84px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.row{display:flex;gap:8px}
+.row input{flex:1;min-width:0}
+.ghost{
+  flex:none;
+  font:inherit;
+  font-weight:600;
+  color:var(--accent);
+  background:transparent;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:0 14px;
+}
+.hint{color:var(--mute);font-size:.85rem;margin:6px 0 0}
+details{
+  border-top:1px solid var(--line);
+  padding-top:10px;
+  margin-top:10px;
+}
+details:first-of-type{margin-top:0;border-top:0;padding-top:0}
+summary{
+  cursor:pointer;
+  font-weight:700;
+  color:var(--accent);
+  padding:6px 0;
+}
+details ol{margin:6px 0 4px;padding-left:20px;color:var(--mute);font-size:.92rem}
+details li{margin-bottom:4px}
+details b{color:var(--ink)}
+.go{
+  width:100%;
+  font:inherit;
+  font-size:1.05rem;
+  font-weight:800;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border:0;
+  border-radius:12px;
+  padding:15px;
+  margin-top:4px;
+}
+.go:disabled{opacity:.55}
+.go:focus-visible,.ghost:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#log{margin:16px 0 0;padding:0;list-style:none;font-size:.92rem}
+#log li{
+  padding:8px 10px;
+  border-left:4px solid var(--line);
+  background:var(--field);
+  border-radius:0 8px 8px 0;
+  margin-bottom:6px;
+  overflow-wrap:anywhere;
+}
+#log li.ok{border-color:var(--ok)}
+#log li.err{border-color:var(--warn);color:var(--warn)}
+#log li.warn{border-color:#d69a00;background:var(--note);color:var(--note-ink)}
+#result{display:none}
+#result.show{display:block}
+.idbox{
+  font-size:1.7rem;
+  font-weight:800;
+  letter-spacing:.02em;
+  word-break:break-all;
+  margin:4px 0 12px;
+}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btns .ghost{padding:10px 14px}
+.btns a.ghost{text-decoration:none;display:inline-block}
+.badge{
+  display:inline-block;
+  font-size:.8rem;
+  font-weight:700;
+  padding:3px 10px;
+  border-radius:99px;
+  border:1.5px solid var(--ok);
+  color:var(--ok);
+  margin-bottom:6px;
+}
+.badge.no{border-color:var(--warn);color:var(--warn)}
+@media (prefers-reduced-motion:no-preference){
+  .go{transition:opacity .15s}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Mesh Uploader (FBX Only)<small>Upload FBX dari GitHub ke akun Roblox</small></h1>
+  <p class="lead">Isi enam kolom di bawah, lalu tekan Create Mesh. API Key hanya dipakai di browser ini dan tidak disimpan.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="name"><span class="n">1</span>Nama mesh</label>
+      <input id="name" type="text" maxlength="50" placeholder="Contoh: Pedang Api" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="desc"><span class="n">2</span>Deskripsi mesh</label>
+      <textarea id="desc" maxlength="1000" placeholder="Tulis deskripsi singkat"></textarea>
+    </div>
+    <div class="field">
+      <label for="key"><span class="n">3</span>API Key</label>
+      <div class="row">
+        <input id="key" type="password" placeholder="Paste API Key" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="ghost" type="button" id="showKey">Lihat</button>
+      </div>
+      <details>
+        <summary>Cara bikin API Key</summary>
+        <ol>
+          <li>Buka Creator Hub, masuk ke <b>Open Cloud</b>, lalu <b>API Keys</b>.</li>
+          <li>Buat key baru seperti biasa, beri nama bebas.</li>
+          <li>Di Access Permissions, tambah <b>Assets</b>, lalu centang operasi <b>Read</b> dan <b>Write</b>.</li>
+          <li>Supaya mesh otomatis publik, tambah juga <b>Asset Permissions</b> dengan operasi <b>Write</b>.</li>
+          <li>Di Security, isi IP dengan <b>0.0.0.0/0</b> karena HP punya IP yang berubah.</li>
+          <li>Simpan, lalu salin key-nya dan paste di kolom ini.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="field">
+      <label for="link"><span class="n">4</span>Link GitHub file FBX</label>
+      <input id="link" type="url" placeholder="https://github.com/user/repo/blob/.../mesh.fbx" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <details>
+        <summary>Cara siapkan link GitHub</summary>
+        <ol>
+          <li>Buka GitHub.</li>
+          <li>Buat repository dengan visibilitas <b>Public</b> dan aktifkan <b>Add a README file</b>.</li>
+          <li>Buat commit yang isinya upload file FBX mesh (Add file, Upload files, Commit changes).</li>
+          <li>Setelah commit, buka file FBX di repository, lalu salin <b>permalink</b> dari menu titik tiga.</li>
+          <li>Paste link tersebut di kolom ini.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="field">
+      <label for="uid"><span class="n">5</span>User ID</label>
+      <input id="uid" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Angka ID akun Roblox kamu" autocomplete="off">
+      <p class="hint">User ID adalah akun pemilik key. Angkanya ada di link profil Roblox kamu.</p>
+    </div>
+    <div class="field">
+      <details>
+        <summary>Pengaturan lanjutan (Worker proxy)</summary>
+        <p class="hint">Isi hanya kalau Create Mesh gagal dengan pesan koneksi ditolak. Kosongkan untuk langsung ke Roblox.</p>
+        <input id="proxy" type="url" placeholder="https://nama.akun.workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </details>
+    </div>
+    <button class="go" type="button" id="go">Create Mesh</button>
+    <ul id="log" aria-live="polite"></ul>
+  </div>
+
+  <div class="card" id="result" aria-live="polite">
+    <span class="badge" id="pubBadge">Publik</span>
+    <div>Asset ID</div>
+    <div class="idbox" id="assetId"></div>
+    <div class="btns">
+      <button class="ghost" type="button" id="copyId">Salin ID</button>
+      <button class="ghost" type="button" id="copyUri">Salin rbxassetid</button>
+      <a class="ghost" id="openLink" href="#" target="_blank" rel="noopener">Buka di Creator Hub</a>
+    </div>
+  </div>
+</main>
+
+<script>
+const ROBLOX = 'https://apis.roblox.com';
+let API = ROBLOX;
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+let currentAssetId = '';
+
+function addLog(text, type) {
+  const li = document.createElement('li');
+  if (type) li.className = type;
+  li.textContent = text;
+  logEl.appendChild(li);
+  li.scrollIntoView({block: 'nearest'});
+  return li;
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function toRawUrl(input) {
+  const u = input.trim();
+  let m = u.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/(?:blob|raw)\/(.+)$/i);
+  if (m) return 'https://raw.githubusercontent.com/' + m[1] + '/' + m[2] + '/' + m[3].split('?')[0].split('#')[0];
+  if (/^https?:\/\/raw\.githubusercontent\.com\//i.test(u)) return u.split('?')[0].split('#')[0];
+  return null;
+}
+
+function fileNameFrom(url) {
+  const last = url.split('/').pop() || 'mesh.fbx';
+  try { return decodeURIComponent(last); } catch (e) { return last; }
+}
+
+async function readError(res) {
+  let text = '';
+  try { text = await res.text(); } catch (e) {}
+  try {
+    const j = JSON.parse(text);
+    return j.message || (j.errors && j.errors[0] && (j.errors[0].message || j.errors[0].code)) || text;
+  } catch (e) {
+    return text.slice(0, 200);
+  }
+}
+
+function networkHint(e) {
+  if (e instanceof TypeError) {
+    return 'Koneksi ke Roblox ditolak browser (kemungkinan CORS atau internet putus). Isi Worker proxy di Pengaturan lanjutan, atau coba lagi.';
+  }
+  return e.message;
+}
+
+async function makePublic(assetId, key) {
+  const body = JSON.stringify({
+    subjectType: 'All',
+    subjectId: '',
+    action: 'Use',
+    requests: [{assetId: Number(assetId), grantToDependencies: true}]
+  });
+  const send = type => fetch(API + '/asset-permissions-api/v1/assets/permissions', {
+    method: 'PATCH',
+    headers: {'x-api-key': key, 'Content-Type': type},
+    body
+  });
+  let res = await send('application/json');
+  if (res.status === 415) res = await send('application/json-patch+json');
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await readError(res)));
+}
+
+async function createMesh() {
+  const name = $('name').value.trim();
+  const desc = $('desc').value.trim();
+  const key = $('key').value.trim();
+  const link = $('link').value.trim();
+  const uid = $('uid').value.trim();
+  const proxy = $('proxy').value.trim().replace(/\/+$/, '');
+  API = proxy || ROBLOX;
+  try { localStorage.setItem('meshUploaderProxy', proxy); } catch (e) {}
+
+  logEl.innerHTML = '';
+  $('result').classList.remove('show');
+
+  if (!name) return addLog('Isi nama mesh dulu.', 'err');
+  if (!key) return addLog('Paste API Key dulu.', 'err');
+  const raw = toRawUrl(link);
+  if (!raw) return addLog('Link harus dari GitHub (github.com/.../blob/... atau raw.githubusercontent.com/...).', 'err');
+  const fileName = fileNameFrom(raw);
+  if (!/\.fbx$/i.test(fileName)) return addLog('Link harus mengarah ke file berakhiran .fbx.', 'err');
+  if (!/^\d+$/.test(uid)) return addLog('User ID harus berupa angka.', 'err');
+
+  const btn = $('go');
+  btn.disabled = true;
+
+  try {
+    addLog('Mengunduh FBX dari GitHub...');
+    let res;
+    try {
+      res = await fetch(raw);
+    } catch (e) {
+      throw new Error('Gagal menghubungi GitHub. Cek internet dan pastikan repository berstatus Public.');
+    }
+    if (!res.ok) throw new Error('GitHub membalas ' + res.status + '. Pastikan repository Public dan link permalink benar.');
+    const buf = await res.arrayBuffer();
+    const head = new TextDecoder().decode(new Uint8Array(buf.slice(0, 15))).toLowerCase();
+    if (!buf.byteLength || head.startsWith('<!doctype') || head.startsWith('<html')) {
+      throw new Error('Yang terunduh bukan file FBX. Pakai permalink ke file FBX-nya langsung.');
+    }
+    addLog('FBX terunduh (' + (buf.byteLength / 1048576).toFixed(2) + ' MB).', 'ok');
+
+    addLog('Mengirim ke Roblox...');
+    const fd = new FormData();
+    fd.append('request', JSON.stringify({
+      assetType: 'Model',
+      displayName: name,
+      description: desc,
+      creationContext: {creator: {userId: uid}}
+    }));
+    fd.append('fileContent', new Blob([buf], {type: 'model/fbx'}), fileName);
+
+    let up;
+    try {
+      up = await fetch(API + '/assets/v1/assets', {method: 'POST', headers: {'x-api-key': key}, body: fd});
+    } catch (e) {
+      throw new Error(networkHint(e));
+    }
+    if (!up.ok) {
+      const msg = await readError(up);
+      let hint = '';
+      if (up.status === 401 || up.status === 403) hint = ' Cek permission Assets (Read dan Write), IP 0.0.0.0/0, dan User ID pemilik key.';
+      throw new Error('Roblox menolak upload (HTTP ' + up.status + '): ' + msg + hint);
+    }
+    const op = await up.json();
+    const opId = String(op.path || op.operationId || '').split('/').pop();
+    addLog('Upload diterima. Menunggu Roblox memproses (moderasi dan impor)...', 'ok');
+
+    let asset = op.done ? op.response : null;
+    if (op.done && op.error) throw new Error(op.error.message || 'Roblox gagal memproses file.');
+    let misses = 0;
+    for (let i = 0; !asset && i < 60; i++) {
+      await sleep(2500);
+      try {
+        const r = await fetch(API + '/assets/v1/operations/' + opId, {headers: {'x-api-key': key}});
+        if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await readError(r)));
+        misses = 0;
+        const j = await r.json();
+        if (j.done) {
+          if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+          asset = j.response;
+        }
+      } catch (e) {
+        if (e.message.indexOf('HTTP') === 0 && misses > 2) throw e;
+        misses++;
+        if (misses > 6) throw new Error(networkHint(e));
+      }
+    }
+    if (!asset || !asset.assetId) {
+      throw new Error('Roblox belum selesai memproses. Operation ID: ' + opId + '. Cek di Creator Hub bagian Creations beberapa menit lagi.');
+    }
+
+    currentAssetId = String(asset.assetId);
+    addLog('Mesh berhasil dibuat. Asset ID: ' + currentAssetId, 'ok');
+
+    let isPublic = false;
+    addLog('Mengatur mesh jadi publik...');
+    try {
+      await makePublic(currentAssetId, key);
+      isPublic = true;
+      addLog('Mesh sekarang publik.', 'ok');
+    } catch (e) {
+      addLog('Mesh sudah terupload tapi belum publik: ' + networkHint(e) + ' Tambahkan permission Asset Permissions (Write) di API Key, atau atur izin manual di Creator Hub.', 'warn');
+    }
+
+    $('assetId').textContent = currentAssetId;
+    const badge = $('pubBadge');
+    badge.textContent = isPublic ? 'Publik' : 'Belum publik';
+    badge.className = isPublic ? 'badge' : 'badge no';
+    $('openLink').href = 'https://create.roblox.com/store/asset/' + currentAssetId;
+    $('result').classList.add('show');
+    $('result').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  } catch (e) {
+    addLog(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function copyText(text, button) {
+  const old = button.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const t = document.createElement('textarea');
+    t.value = text;
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand('copy'); } catch (err) {}
+    t.remove();
+  }
+  button.textContent = 'Tersalin';
+  setTimeout(() => { button.textContent = old; }, 1400);
+}
+
+try { $('proxy').value = localStorage.getItem('meshUploaderProxy') || ''; } catch (e) {}
+$('go').addEventListener('click', createMesh);
+$('showKey').addEventListener('click', () => {
+  const k = $('key');
+  const show = k.type === 'password';
+  k.type = show ? 'text' : 'password';
+  $('showKey').textContent = show ? 'Sembunyi' : 'Lihat';
+});
+$('copyId').addEventListener('click', e => copyText(currentAssetId, e.currentTarget));
+$('copyUri').addEventListener('click', e => copyText('rbxassetid://' + currentAssetId, e.currentTarget));
+</script>
+</body>
+</html>
